@@ -7,6 +7,7 @@ import ammonite.ops.ImplicitWd._
 
 import $ivy.`com.github.os72:protoc-jar:3.5.1`
 import $ivy.`org.antlr:antlr4:4.7.1`
+import $file.^.`scala-wake`.common, common._
 
 trait FirrtlBase extends SbtModule with CommonOptions with BuildInfo {
   override def ivyDeps = Agg(
@@ -110,65 +111,3 @@ case class ProtobufConfig(val sourcePath: Path) {
 
 }
 
-trait CommonOptions extends ScalaModule {
-  def scalaVersion = "2.12.4"
-
-  def scalacOptions = Seq(
-    "-deprecation",
-    "-explaintypes",
-    "-feature",
-    "-language:reflectiveCalls",
-    "-unchecked",
-    "-Xcheckinit",
-    "-Xlint:infer-any",
-    //"-Xlint:missing-interpolator",
-    "-Xsource:2.11"
-  )
-  def javacOptions = Seq(
-    "-source", "1.8",
-    "-target", "1.8"
-  )
-}
-
-// Define our own BuildInfo since mill doesn't currently have one.
-trait BuildInfo extends ScalaModule { outer =>
-
-  def buildInfoObjectName: String = "BuildInfo"
-
-  def buildInfoMembers: T[Map[String, String]] = T {
-    Map.empty[String, String]
-  }
-
-  private def generateBuildInfo(outputPath: Path, members: Map[String, String]) = {
-    val outputFile = outputPath / "BuildInfo.scala"
-    val packageName = members.getOrElse("buildInfoPackage", "")
-    val packageDef = if (packageName != "") {
-      s"package ${packageName}"
-    } else {
-      ""
-    }
-    val internalMembers =
-      members
-        .map {
-          case (name, value) => s"""  val ${name}: String = "${value}""""
-        }
-        .mkString("\n")
-    write(outputFile,
-      s"""
-         |${packageDef}
-         |case object ${buildInfoObjectName}{
-         |$internalMembers
-         |  override val toString: String = {
-         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s" format (
-         |        buildInfoPackage, version, scalaVersion
-         |    )
-         |  }
-         |}
-       """.stripMargin)
-    outputPath
-  }
-
-  override def generatedSources = T {
-    super.generatedSources() :+ PathRef(generateBuildInfo(T.ctx().dest, buildInfoMembers()))
-  }
-}
