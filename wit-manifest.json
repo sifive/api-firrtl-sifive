@@ -1,0 +1,12 @@
+[
+    {
+        "commit": "e2b9e4e78c997c4f1e15a312b393cd4e61ee70ac",
+        "name": "scala-wake",
+        "source": "git@github.com:sifive/scala-wake.git"
+    },
+    {
+        "commit": "7e1dcb7c316849d10938ff4fa79ba8df834ba403",
+        "name": "firrtl",
+        "source": "git@github.com:freechipsproject/firrtl.git"
+    }
+]
