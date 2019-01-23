@@ -3,3 +3,73 @@ global def firrtlProject = millScalaProject "firrtl" here Nil "firrtl" "FirrtlBa
 
 publish scalaProjects = firrtlProject
 
+global data FirrtlLogLevel =
+  Firrtl_LL_Error
+  Firrtl_LL_Warn
+  Firrtl_LL_Info
+  Firrtl_LL_Debug
+  Firrtl_LL_Trace
+
+global data FirrtlCompiler =
+  Firrtl_X_High
+  Firrtl_X_Middle
+  Firrtl_X_Low
+  Firrtl_X_Verilog
+  Firrtl_X_SVerilog
+
+data FirrtlInlinedModule =
+  Module String
+  Instance String String
+
+data ReplacedSeqMem = ReplacedSeqMem String String String
+
+tuple FirrtlOptions =
+  global TopName             String
+  global TargetDirectory     String
+  global InputFile           String
+  global LogLevel            FirrtlLogLevel
+  global LogClassNames       Boolean
+  global AnnotaionFiles      List String
+  global Compiler            FirrtlCompiler
+  global CustomTransforms    List String
+  FirrtlInline               List FirrtlInlinedModule
+  global InferReadWrite      Boolean
+  ReplSeqMems                Option ReplacedSeqMem
+  global SplitModules        Boolean
+  global NoCheckCombLoops    Boolean
+  global NoDCE               Boolean
+
+def makeFirrtlOptions topName targetDir inputFile =
+  FirrtlOptions topName targetDir inputfile
+  Firrtl_LL_Info   #LogLevel
+  False            #LogClassNames
+  Nil              #AnnotaionFiles
+  Firrtl_X_Verilog #Compiler
+  Nil              #CustomTransforms
+  Nil              #FirrtlInline
+  False            #InferReadWrite
+  None             #ReplSeqMems
+  False            #SplitModules
+  False            #NoCheckCombLoops   
+  False            #NoDCE
+
+tuple FirrtlOutput =
+  global AllFiles         List String
+  global SeqMemConfigFile Option String
+
+def optionsToCmdline options =
+  def topName = "-tn", options.getFirrtlOptionsTopName, Nil
+  def targetDir = "-td", options.getFirrtlOptionsTargetDirectory, Nil
+  def inputFile = "-i", options.getFirrtlOptionsInputFile, Nil
+  def logLevel = "-ll", options.getFirrtlOptionsLogLevel, Nil
+  def logClassNames = if options.getFirrtlOptionsLogClassNames then "-lcn", Nil else Nil
+  def annoFiles = map ("-faf", _, Nil) options.getFirrtlOptionsAnnotaionFiles | flatten
+  def compiler = "-X", (
+    match options.getFirrtlOptionsCompiler
+      Firrtl_X_High
+      Firrtl_X_Middle
+      Firrtl_X_Low
+      Firrtl_X_Verilog
+      Firrtl_X_SVerilog
+  )
+def doFirrtl options =
