@@ -11,11 +11,11 @@ import $file.^.`scala-wake`.common, common._
 
 trait FirrtlBase extends SbtModule with CommonOptions with BuildInfo {
   override def ivyDeps = Agg(
-    ivy"com.typesafe.scala-logging::scala-logging:3.7.2",
+    ivy"com.typesafe.scala-logging::scala-logging:3.9.0",
     ivy"ch.qos.logback:logback-classic:1.2.3",
-    ivy"com.github.scopt::scopt:3.6.0",
+    ivy"com.github.scopt::scopt:3.7.0",
     ivy"net.jcazevedo::moultingyaml:0.4.0",
-    ivy"org.json4s::json4s-native:3.5.3",
+    ivy"org.json4s::json4s-native:3.6.1",
     ivy"org.antlr:antlr4-runtime:4.7.1",
     ivy"${ProtobufConfig.ivyDep}"
   )

@@ -5,7 +5,7 @@
         "source": "git@github.com:sifive/scala-wake.git"
     },
     {
-        "commit": "7e1dcb7c316849d10938ff4fa79ba8df834ba403",
+        "commit": "50ba95fe05cc348496425733554be5fc7d797de1",
         "name": "firrtl",
         "source": "git@github.com:freechipsproject/firrtl.git"
     }
