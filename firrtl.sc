@@ -17,6 +17,7 @@ trait FirrtlBase extends SbtModule with CommonOptions with BuildInfo {
     ivy"net.jcazevedo::moultingyaml:0.4.0",
     ivy"org.json4s::json4s-native:3.6.1",
     ivy"org.antlr:antlr4-runtime:4.7.1",
+    ivy"org.apache.commons:commons-text:1.6",
     ivy"${ProtobufConfig.ivyDep}"
   )
   override def millSourcePath = os.pwd / up / 'firrtl
