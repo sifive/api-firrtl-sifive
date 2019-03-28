@@ -1,15 +1,29 @@
 
 def buildDir = mkdir "build/firrtl"
 
+# TODO This section seems like a lot of code to just split up
+#   Scala version, antlr4 dependency, and the rest
+def versionAndDeps = readIvyDeps here
+def allIvyDeps = match versionAndDeps
+  Pair _ deps = deps
+def scalaVersion = match versionAndDeps
+  Pair version _ = version
+def splitDeps = splitBy (_.getIvyDepString ==~ "org.antlr:antlr4:4.7.2") allIvyDeps
+def justAntlr = match splitDeps
+  Pair m _ = match m
+    h, Nil   = h
+    l        = raise "Exactly 1 antlr4 dependency expected, got {format l}"
+global def otherDeps = match splitDeps
+  Pair _ n = n
+
 def firrtlAntlr _ =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
   def srcs = sources antlrSrcDir '.*\.g4'
   def package = "firrtl.antlr"
-  def ivy = makeJavaIvyDep "org.antlr:antlr4:4.7.2"
   def main = "org.antlr.v4.Tool"
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
-  (runIvyDep ivy main args (outDir, srcs)).getJobOutputs
+  (runIvyDep justAntlr main args (outDir, srcs)).getJobOutputs
 
 def firrtlProto _ =
   #def ivyDep = makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0"
@@ -19,19 +33,8 @@ def firrtlProto _ =
 global def firrtlScalaModule _ =
   def base = makeSBTScalaModule "firrtl" "firrtl" "2.12.8"
   def scalaVersion = base.getScalaModuleScalaVersion
-  def mkScalaIvyDep = makeScalaIvyDep scalaVersion
-  def ivyDeps =
-    mkScalaIvyDep  "com.typesafe.scala-logging::scala-logging:3.9.0",
-    makeJavaIvyDep "ch.qos.logback:logback-classic:1.2.3",
-    mkScalaIvyDep  "com.github.scopt::scopt:3.7.0",
-    mkScalaIvyDep  "net.jcazevedo::moultingyaml:0.4.0",
-    mkScalaIvyDep  "org.json4s::json4s-native:3.6.1",
-    makeJavaIvyDep "org.antlr:antlr4-runtime:4.7.2",
-    makeJavaIvyDep "org.apache.commons:commons-text:1.6",
-    makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0",
-    Nil
   base
-  | setScalaModuleIvyDeps ivyDeps
+  | setScalaModuleIvyDeps otherDeps
   | setScalaModuleGeneratedSources (firrtlProto Unit, firrtlAntlr Unit)
 
 global def compileFirrtl _ =
