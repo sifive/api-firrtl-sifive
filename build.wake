@@ -1,5 +1,38 @@
 
-global def firrtlProject = millScalaProject "firrtl" here Nil "firrtl" "FirrtlBase"
+def buildDir = mkdir "build/firrtl"
 
-publish scalaProjects = firrtlProject
+def firrtlAntlr _ =
+  def outDir = mkdir "{buildDir.getPathName}/antlr"
+  def antlrSrcDir = "firrtl/src/main/antlr4"
+  def srcs = sources antlrSrcDir '.*\.g4'
+  def package = "firrtl.antlr"
+  def ivy = makeJavaIvyDep "org.antlr:antlr4:4.7.2"
+  def main = "org.antlr.v4.Tool"
+  def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
+  (runIvyDep ivy main args (outDir, srcs)).getJobOutputs
 
+def firrtlProto _ =
+  #def ivyDep = makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0"
+  #def main = "Protoc.runProtoc"
+  files here '.*FirrtlProtos.java' | head | makeStatePath
+
+global def firrtlScalaModule _ =
+  def base = makeSBTScalaModule "firrtl" "firrtl" "2.12.8"
+  def scalaVersion = base.getScalaModuleScalaVersion
+  def mkScalaIvyDep = makeScalaIvyDep scalaVersion
+  def ivyDeps =
+    mkScalaIvyDep  "com.typesafe.scala-logging::scala-logging:3.9.0",
+    makeJavaIvyDep "ch.qos.logback:logback-classic:1.2.3",
+    mkScalaIvyDep  "com.github.scopt::scopt:3.7.0",
+    mkScalaIvyDep  "net.jcazevedo::moultingyaml:0.4.0",
+    mkScalaIvyDep  "org.json4s::json4s-native:3.6.1",
+    makeJavaIvyDep "org.antlr:antlr4-runtime:4.7.2",
+    makeJavaIvyDep "org.apache.commons:commons-text:1.6",
+    makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0",
+    Nil
+  base
+  | setScalaModuleIvyDeps ivyDeps
+  | setScalaModuleGeneratedSources (firrtlProto Unit, firrtlAntlr Unit)
+
+global def compileFirrtl _ =
+  compileScalaModule (firrtlScalaModule Unit)
