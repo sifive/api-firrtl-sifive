@@ -1,5 +1,4 @@
-
 global def firrtlProject = millScalaProject "firrtl" here Nil "firrtl" "FirrtlBase"
 
-publish scalaProjects = firrtlProject
+publish scalaProjects = firrtlProject, Nil
 
