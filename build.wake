@@ -1,29 +1,17 @@
 
 def buildDir = mkdir "build/firrtl"
 
-# TODO This section seems like a lot of code to just split up
-#   Scala version, antlr4 dependency, and the rest
-def versionAndDeps = readIvyDeps here
-def allIvyDeps = match versionAndDeps
-  Pair _ deps = deps
-def scalaVersion = match versionAndDeps
-  Pair version _ = version
-def splitDeps = splitBy (_.getIvyDepString ==~ "org.antlr:antlr4:4.7.2") allIvyDeps
-def justAntlr = match splitDeps
-  Pair m _ = match m
-    h, Nil   = h
-    l        = raise "Exactly 1 antlr4 dependency expected, got {format l}"
-global def otherDeps = match splitDeps
-  Pair _ n = n
+def ivyDepJSON = readIvyDeps here
 
-def firrtlAntlr _ =
+global def firrtlAntlr _ =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
   def srcs = sources antlrSrcDir '.*\.g4'
+  def ivyDep = ivyDepJSON // "antlr" // "dependencies" | getJString | parseIvyDep
   def package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
-  (runIvyDep justAntlr main args (outDir, srcs)).getJobOutputs
+  (runIvyDep ivyDep main args (outDir, srcs)).getJobOutputs
 
 def firrtlProto _ =
   #def ivyDep = makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0"
@@ -31,10 +19,11 @@ def firrtlProto _ =
   files here '.*FirrtlProtos.java' | head | makeStatePath
 
 global def firrtlScalaModule _ =
-  def base = makeSBTScalaModule "firrtl" "firrtl" "2.12.8"
-  def scalaVersion = base.getScalaModuleScalaVersion
-  base
-  | setScalaModuleIvyDeps otherDeps
+  def name = "firrtl"
+  def scalaVersion = ivyDepJSON // name // "scalaVersion" | getJString
+  def ivyDeps = ivyDepJSON // name // "dependencies" | getJArray | map getJString | map parseIvyDep
+  makeSBTScalaModule name "firrtl" scalaVersion
+  | setScalaModuleIvyDeps ivyDeps
   | setScalaModuleGeneratedSources (firrtlProto Unit, firrtlAntlr Unit)
 
 global def compileFirrtl _ =
