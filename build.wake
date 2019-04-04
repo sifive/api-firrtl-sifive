@@ -1,7 +1,7 @@
 
 def buildDir = mkdir "build/firrtl"
 
-def ivyDepJSON = readIvyDeps here
+def ivyDepJSON = readIvyDepsJSON here
 
 global def firrtlAntlr _ =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
@@ -19,11 +19,9 @@ def firrtlProto _ =
   files here '.*FirrtlProtos.java' | head | makeStatePath
 
 global def firrtlScalaModule _ =
-  def name = "firrtl"
-  def scalaVersion = ivyDepJSON // name // "scalaVersion" | getJString
-  def ivyDeps = ivyDepJSON // name // "dependencies" | getJArray | map getJString | map parseIvyDep
-  makeSBTScalaModule name "firrtl" scalaVersion
-  | setScalaModuleIvyDeps ivyDeps
+  makeScalaModuleFromJSON here "firrtl"
+  | scalaModuleAddSBTDefaults
+  | setScalaModuleRootDir "firrtl"
   | setScalaModuleGeneratedSources (firrtlProto Unit, firrtlAntlr Unit)
 
 global def compileFirrtl _ =
