@@ -7,7 +7,9 @@ global def firrtlAntlr _ =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
   def srcs = sources antlrSrcDir '.*\.g4'
-  def ivyDep = ivyDepJSON // "antlr" // "dependencies" | getJString | parseIvyDep
+  def ivyDep =
+    ivyDepJSON // "antlr" // "dependencies" | getJString
+    | omap parseIvyDep | getOrElse (raise "antlr deps not found!")
   def package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
