@@ -3,7 +3,7 @@ def buildDir = mkdir "build/firrtl"
 
 def ivyDepJSON = readIvyDepsJSON here
 
-global def firrtlAntlr _ =
+def firrtlAntlr _ =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
   def srcs = sources antlrSrcDir '.*\.g4'
@@ -20,11 +20,9 @@ def firrtlProto _ =
   #def main = "Protoc.runProtoc"
   files here '.*FirrtlProtos.java' | head | makeStatePath
 
-global def firrtlScalaModule _ =
+global def firrtlScalaModule =
   makeScalaModuleFromJSON here "firrtl"
   | scalaModuleAddSBTDefaults
   | setScalaModuleRootDir "firrtl"
-  | setScalaModuleGeneratedSources (firrtlProto Unit, firrtlAntlr Unit)
+  | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit, firrtlAntlr Unit)
 
-global def compileFirrtl _ =
-  compileScalaModule (firrtlScalaModule Unit)
