@@ -1,4 +1,28 @@
-global def firrtlProject = millScalaProject "firrtl" here Nil "firrtl" "FirrtlBase"
 
-publish scalaProjects = firrtlProject, Nil
+def buildDir = mkdir "build/firrtl"
+
+def ivyDepJSON = readIvyDepsJSON here
+
+def firrtlAntlr _ =
+  def outDir = mkdir "{buildDir.getPathName}/antlr"
+  def antlrSrcDir = "firrtl/src/main/antlr4"
+  def srcs = sources antlrSrcDir '.*\.g4'
+  def ivyDep =
+    ivyDepJSON // "antlr" // "dependencies" | getJString
+    | omap parseIvyDep | getOrElse (raise "antlr deps not found!")
+  def package = "firrtl.antlr"
+  def main = "org.antlr.v4.Tool"
+  def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
+  (runIvyDep ivyDep main args (outDir, srcs)).getJobOutputs
+
+def firrtlProto _ =
+  #def ivyDep = makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0"
+  #def main = "Protoc.runProtoc"
+  files here '.*FirrtlProtos.java' | head | makeStatePath
+
+global def firrtlScalaModule =
+  makeScalaModuleFromJSON here "firrtl"
+  | scalaModuleAddSBTDefaults
+  | setScalaModuleRootDir "firrtl"
+  | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit, firrtlAntlr Unit)
 
