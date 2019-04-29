@@ -26,3 +26,134 @@ global def firrtlScalaModule =
   | setScalaModuleRootDir "firrtl"
   | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit, firrtlAntlr Unit)
 
+
+global data FirrtlLogLevel =
+  FirrtlLogError
+  FirrtlLogWarn
+  FirrtlLogInfo
+  FirrtlLogDebug
+  FirrtlLogTrace
+
+global data FirrtlCompiler =
+  FirrtlCompileHigh
+  FirrtlCompileMiddle
+  FirrtlCompileLow
+  FirrtlCompileVerilog
+  FirrtlCompileMVerilog
+  FirrtlCompileSVerilog
+  FirrtlCompileNone
+
+global data FirrtlInfoMode =
+  FirrtlInfoIgnore
+  FirrtlInfoUse
+  FirrtlInfoGen
+  FirrtlInfoAppend
+
+tuple FirrtlCompilePlan =
+  global Jars:             List Path
+  global TopName:          String
+  global TargetDir:        String
+  global LogLevel:         FirrtlLogLevel
+  global InputFile:        Path
+  global AnnoFiles:        List Path
+  global Compiler:         FirrtlCompiler
+  global InfoMode:         FirrtlInfoMode
+  global CustomTransforms: List String
+  global InferRW:          Boolean
+  global ReplSeqMem:       List (Pair String String)
+  global SplitModules:     Boolean
+
+global def makeFirrtlCompilePlan jars topName targetDir inputFile =
+  FirrtlCompilePlan
+  jars                  # Jars
+  topName               # TopName
+  targetDir             # TargetDir
+  FirrtlLogInfo         # LogLevel
+  inputFile             # InputFile
+  Nil                   # AnnoFiles
+  FirrtlCompileVerilog  # Compiler
+  FirrtlInfoAppend      # InfoMode
+  Nil                   # CustomTransforms
+  False                 # InferRW
+  Nil                   # ReplSeqMem
+  True                  # SplitModules
+
+def logLevelToString ll = match ll
+  FirrtlLogError = "error"
+  FirrtlLogWarn  = "warn"
+  FirrtlLogInfo  = "info"
+  FirrtlLogDebug = "debug"
+  FirrtlLogTrace = "trace"
+
+def compilerToString comp = match comp
+  FirrtlCompileHigh     = "high"
+  FirrtlCompileMiddle   = "middle"
+  FirrtlCompileLow      = "low"
+  FirrtlCompileVerilog  = "verilog"
+  FirrtlCompileMVerilog = "mverilog"
+  FirrtlCompileSVerilog = "sverilog"
+  FirrtlCompileNone     = "none"
+
+def infoModeToString infoMode = match infoMode
+  FirrtlInfoIgnore = "ignore"
+  FirrtlInfoUse    = "use"
+  FirrtlInfoGen    = "gen"
+  FirrtlInfoAppend = "append"
+
+tuple FirrtlCompileOutputs =
+  TargetOutputs_: List Path
+  AllOutputs_:    List Path
+  InputPlan_:     FirrtlCompilePlan
+
+global def getFirrtlCompileOutputsTargetOutputs = getFirrtlCompileOutputsTargetOutputs_
+global def getFirrtlCompileOutputsAllOutputs    = getFirrtlCompileOutputsAllOutputs_
+global def getFirrtlCompileOutputsInputPlan     = getFirrtlCompileOutputsInputPlan_
+
+global def runFirrtlCompile plan =
+  def jars             = plan.getFirrtlCompilePlanJars
+  def topName          = plan.getFirrtlCompilePlanTopName
+  def targetDir        = plan.getFirrtlCompilePlanTargetDir
+  def logLevel         = plan.getFirrtlCompilePlanLogLevel
+  def inputFile        = plan.getFirrtlCompilePlanInputFile
+  def annoFiles        = plan.getFirrtlCompilePlanAnnoFiles
+  def compiler         = plan.getFirrtlCompilePlanCompiler
+  def infoMode         = plan.getFirrtlCompilePlanInfoMode
+  def customTransforms = plan.getFirrtlCompilePlanCustomTransforms
+  def inferRW          = plan.getFirrtlCompilePlanInferRW
+  def replSeqMem       = plan.getFirrtlCompilePlanReplSeqMem
+  def splitModules     = plan.getFirrtlCompilePlanSplitModules
+
+  def main     = "firrtl.Driver"
+
+  def cmdline =
+    def withAnnoFiles base = foldr ("-faf", _.getPathName, _) base annoFiles
+    def withReplSeqMems base =
+      def toCmdline (Pair circuit confFile) cmdline =
+        "--repl-seq-mem", "-c:{circuit}:-o:{confFile}", cmdline
+      foldr toCmdline base replSeqMem
+    def withInferRW base = if inferRW then "--infer-rw", base else base
+    def withSplitModules base = if splitModules then "--split-modules", base else base
+    def withCustomTransforms base =
+      if customTransforms.empty then base
+      else "-fct", "{catWith "," customTransforms}", base
+
+    def classpath = jars | map getPathName | catWith ":"
+    which "java", "-cp", classpath, main,
+    "-tn",            topName,
+    "-i",             inputFile.getPathName,
+    "-td",            targetDir,
+    "-ll",            logLevel.logLevelToString,
+    "--info-mode",    infoMode.infoModeToString,
+    "--compiler",     compiler.compilerToString,
+    Nil
+    | withAnnoFiles
+    | withReplSeqMems
+    | withInferRW
+    | withSplitModules
+    | withCustomTransforms
+
+  def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars
+  def firrtlOutputs = job cmdline inputs | getJobOutputs
+  def getFilesRe regex = filter (matches regex _.getPathName) firrtlOutputs
+
+  FirrtlCompileOutputs "{targetDir.quote}/\\.*".getFilesRe firrtlOutputs plan
