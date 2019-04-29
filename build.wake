@@ -62,6 +62,7 @@ tuple FirrtlCompilePlan =
   global InferRW:          Boolean
   global ReplSeqMem:       List (Pair String String)
   global SplitModules:     Boolean
+  global VisibleFiles:     List Path
 
 global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   FirrtlCompilePlan
@@ -77,6 +78,7 @@ global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   False                 # InferRW
   Nil                   # ReplSeqMem
   True                  # SplitModules
+  Nil                   # VisibleFiles
 
 def logLevelToString ll = match ll
   FirrtlLogError = "error"
@@ -122,6 +124,7 @@ global def runFirrtlCompile plan =
   def inferRW          = plan.getFirrtlCompilePlanInferRW
   def replSeqMem       = plan.getFirrtlCompilePlanReplSeqMem
   def splitModules     = plan.getFirrtlCompilePlanSplitModules
+  def visibleFiles     = plan.getFirrtlCompilePlanVisibleFiles
 
   def main     = "firrtl.Driver"
 
@@ -152,7 +155,7 @@ global def runFirrtlCompile plan =
     | withSplitModules
     | withCustomTransforms
 
-  def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars
+  def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
   def firrtlOutputs = job cmdline inputs | getJobOutputs
   def getFilesRe regex = filter (matches regex _.getPathName) firrtlOutputs
 
