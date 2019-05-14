@@ -3,7 +3,7 @@ def buildDir = mkdir "build/firrtl"
 
 def ivyDepJSON = readIvyDepsJSON here
 
-def firrtlAntlr _ =
+def firrtlAntlr Unit =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
   def srcs = sources antlrSrcDir '.*\.g4'
@@ -15,16 +15,19 @@ def firrtlAntlr _ =
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
   (runIvyDep ivyDep main args (outDir, srcs)).getJobOutputs
 
-def firrtlProto _ =
-  #def ivyDep = makeJavaIvyDep "com.google.protobuf:protobuf-java:3.5.0"
-  #def main = "Protoc.runProtoc"
-  files here '.*FirrtlProtos.java' | head | makeStatePath
+global def firrtlProto Unit =
+  def outDir = mkdir "{buildDir.getPathName}/proto"
+  def protoSrcDir = "firrtl/src/main/proto"
+  def protoSrcs = sources protoSrcDir '.*\.proto'
+  def args = "--java_out={outDir.getPathName}", (map getPathName protoSrcs)
+  runProtoc args (outDir, protoSrcs)
+  | getJobOutputs
 
 global def firrtlScalaModule =
   makeScalaModuleFromJSON here "firrtl"
   | scalaModuleAddSBTDefaults
   | setScalaModuleRootDir "firrtl"
-  | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit, firrtlAntlr Unit)
+  | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit ++ firrtlAntlr Unit)
 
 
 global data FirrtlLogLevel =
