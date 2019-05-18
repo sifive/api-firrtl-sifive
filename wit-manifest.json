@@ -8,10 +8,5 @@
         "commit": "2272044c6ab46b5148c39c124e66e1a8e9073a24",
         "name": "firrtl",
         "source": "git@github.com:freechipsproject/firrtl.git"
-    },
-    {
-        "commit": "cfe13732c47b3feb8a3fb7cf66a55ff0a2ead226",
-        "name": "protobuf-wake",
-        "source": "git@github.com:sifive/protobuf-wake"
     }
 ]

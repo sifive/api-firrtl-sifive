@@ -20,7 +20,9 @@ global def firrtlProto Unit =
   def protoSrcDir = "firrtl/src/main/proto"
   def protoSrcs = sources protoSrcDir '.*\.proto'
   def args = "--java_out={outDir.getPathName}", (map getPathName protoSrcs)
-  runProtoc args (outDir, protoSrcs)
+  makePlan ("protoc", args) (outDir, protoSrcs)
+  | setPlanResources ("google/protobuf/3.5.1", Nil)
+  | runJob
   | getJobOutputs
 
 global def firrtlScalaModule =
