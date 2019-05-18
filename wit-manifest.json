@@ -1,6 +1,6 @@
 [
     {
-        "commit": "922845f8004e7dd2b4ae8509bf26cb6fa9f4e91d",
+        "commit": "9711856ebcb6350270a27307b7fcc2de3c689bbc",
         "name": "scala-wake",
         "source": "git@github.com:sifive/scala-wake.git"
     },
