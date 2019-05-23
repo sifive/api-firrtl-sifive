@@ -6,19 +6,24 @@ def ivyDepJSON = readIvyDepsJSON here
 def firrtlAntlr Unit =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
-  def srcs = sources antlrSrcDir '.*\.g4'
-  def ivyDep =
-    ivyDepJSON // "antlr" // "dependencies" | getJString
-    | omap stringToIvyDep | getOrElse (raise "antlr deps not found!")
+  def srcs = sources antlrSrcDir `.*\.g4`
+  def extractIvyDep json =
+    json // `antlr` // `dependencies` | getJString
+    | omapPartial stringToIvyDep
+    | omapPartial expandJavaIvyDep
+    | getOrFail "antlr dep not found!"
+  def ivyDep = ivyDepJSON | rmapPass extractIvyDep
   def package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
-  (runIvyDep ivyDep main args (outDir, srcs)).getJobOutputs
+  match ivyDep
+    Pass dep = runIvyDep dep main args (outDir, srcs) | getJobOutputs
+    Fail err = makeBadJob (makeError err), Nil
 
 global def firrtlProto Unit =
   def outDir = mkdir "{buildDir.getPathName}/proto"
   def protoSrcDir = "firrtl/src/main/proto"
-  def protoSrcs = sources protoSrcDir '.*\.proto'
+  def protoSrcs = sources protoSrcDir `.*\.proto`
   def args = "--java_out={outDir.getPathName}", (map getPathName protoSrcs)
   makePlan ("protoc", args) (outDir, protoSrcs)
   | setPlanResources ("google/protobuf/3.5.1", Nil)
@@ -161,6 +166,7 @@ global def runFirrtlCompile plan =
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
   def firrtlOutputs = job cmdline inputs | getJobOutputs
-  def getFilesRe regex = filter (matches regex _.getPathName) firrtlOutputs
-
-  FirrtlCompileOutputs "{targetDir.quote}/\\.*".getFilesRe firrtlOutputs plan
+  def targetOutputs =
+    def regex = regExpCat (targetDir.quote, `/.*`, Nil)
+    firrtlOutputs | filter (matches regex _.getPathName)
+  FirrtlCompileOutputs targetOutputs firrtlOutputs plan
