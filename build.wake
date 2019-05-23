@@ -6,9 +6,9 @@ def ivyDepJSON = readIvyDepsJSON here
 def firrtlAntlr Unit =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
   def antlrSrcDir = "firrtl/src/main/antlr4"
-  def srcs = sources antlrSrcDir '.*\.g4'
+  def srcs = sources antlrSrcDir `.*\.g4`
   def ivyDep =
-    ivyDepJSON // "antlr" // "dependencies" | getJString
+    ivyDepJSON // `antlr` // `dependencies` | getJString
     | omap stringToIvyDep | getOrElse (raise "antlr deps not found!")
   def package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
@@ -18,7 +18,7 @@ def firrtlAntlr Unit =
 global def firrtlProto Unit =
   def outDir = mkdir "{buildDir.getPathName}/proto"
   def protoSrcDir = "firrtl/src/main/proto"
-  def protoSrcs = sources protoSrcDir '.*\.proto'
+  def protoSrcs = sources protoSrcDir `.*\.proto`
   def args = "--java_out={outDir.getPathName}", (map getPathName protoSrcs)
   makePlan ("protoc", args) (outDir, protoSrcs)
   | setPlanResources ("google/protobuf/3.5.1", Nil)
