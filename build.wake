@@ -11,14 +11,14 @@ def firrtlAntlr Unit =
     json // `antlr` // `dependencies` | getJString
     | omapPartial stringToIvyDep
     | omapPartial expandJavaIvyDep
-    | getOrFail "antlr dep not found!"
+    | getOrFail (makeError "antlr dep not found!")
   def ivyDep = ivyDepJSON | rmapPass extractIvyDep
   def package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
   match ivyDep
     Pass dep = runIvyDep dep main args (outDir, srcs) | getJobOutputs
-    Fail err = makeBadJob (makeError err), Nil
+    Fail err = makeBadJob err, Nil
 
 global def firrtlProto Unit =
   def outDir = mkdir "{buildDir.getPathName}/proto"
