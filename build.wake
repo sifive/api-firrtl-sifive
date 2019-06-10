@@ -165,7 +165,14 @@ global def runFirrtlCompile plan =
     | withCustomTransforms
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
-  def firrtlOutputs = job cmdline inputs | getJobOutputs
+  def filterOutputs all =
+    # ignore .f files that have absolute paths in them
+    filter (!matches `.*\.f` _) all
+  def firrtlOutputs =
+    makePlan cmdline inputs
+    | editPlanFnOutputs (_ _ | filterOutputs)
+    | runJob
+    | getJobOutputs
   def targetOutputs =
     def regex = regExpCat (targetDir.quote, `/.*`, Nil)
     firrtlOutputs | filter (matches regex _.getPathName)
