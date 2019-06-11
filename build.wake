@@ -18,7 +18,7 @@ def firrtlAntlr Unit =
   def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
   match ivyDep
     Pass dep = runIvyDep dep main args (outDir, srcs) | getJobOutputs
-    Fail err = makeBadJob err, Nil
+    Fail err = makeBadPath err, Nil
 
 global def firrtlProto Unit =
   def outDir = mkdir "{buildDir.getPathName}/proto"
