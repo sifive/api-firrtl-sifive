@@ -149,7 +149,7 @@ global def runFirrtlCompile plan =
       if customTransforms.empty then base
       else "-fct", "{catWith "," customTransforms}", base
 
-    def maxHeap = "4G"
+    def maxHeap = "15G"
     def maxStack = "5M"
     def classpath = jars | map getPathName | catWith ":"
     which "java",  "-Xmx{maxHeap}", "-Xss{maxStack}", "-cp", classpath, main,
