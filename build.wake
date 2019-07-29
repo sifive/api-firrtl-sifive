@@ -161,10 +161,10 @@ global def runFirrtlCompile plan =
     "--compiler",     compiler.compilerToString,
     Nil
     | withAnnoFiles
+    | withCustomTransforms
+    | withSplitModules
     | withReplSeqMems
     | withInferRW
-    | withSplitModules
-    | withCustomTransforms
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
   def filterOutputs all =
