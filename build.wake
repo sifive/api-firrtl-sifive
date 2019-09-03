@@ -72,6 +72,9 @@ tuple FirrtlCompilePlan =
   global ReplSeqMem:       List (Pair String String)
   global SplitModules:     Boolean
   global VisibleFiles:     List Path
+  global JavaOpts:         List String
+
+def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
 
 global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   FirrtlCompilePlan
@@ -88,6 +91,7 @@ global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   Nil                   # ReplSeqMem
   True                  # SplitModules
   Nil                   # VisibleFiles
+  defaultJavaOpts       # JavaOpts
 
 def logLevelToString ll = match ll
   FirrtlLogError = "error"
@@ -134,6 +138,7 @@ global def runFirrtlCompile plan =
   def replSeqMem       = plan.getFirrtlCompilePlanReplSeqMem
   def splitModules     = plan.getFirrtlCompilePlanSplitModules
   def visibleFiles     = plan.getFirrtlCompilePlanVisibleFiles
+  def javaOpts         = plan.getFirrtlCompilePlanJavaOpts
 
   def main     = "firrtl.Driver"
 
@@ -149,10 +154,8 @@ global def runFirrtlCompile plan =
       if customTransforms.empty then base
       else "-fct", "{catWith "," customTransforms}", base
 
-    def maxHeap = "4G"
-    def maxStack = "5M"
     def classpath = jars | map getPathName | catWith ":"
-    which "java",  "-Xmx{maxHeap}", "-Xss{maxStack}", "-cp", classpath, main,
+    which "java", javaOpts ++ ("-cp", classpath, main,
     "-tn",            topName,
     "-i",             inputFile.getPathName,
     "-td",            targetDir,
@@ -161,10 +164,10 @@ global def runFirrtlCompile plan =
     "--compiler",     compiler.compilerToString,
     Nil
     | withAnnoFiles
-    | withReplSeqMems
-    | withInferRW
-    | withSplitModules
     | withCustomTransforms
+    | withSplitModules
+    | withReplSeqMems
+    | withInferRW)
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
   def filterOutputs all =
