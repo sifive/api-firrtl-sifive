@@ -1,6 +1,6 @@
 [
     {
-        "commit": "f738fbe8667ed6b76ec00a15960b9c3a42b8654a",
+        "commit": "f7cf2574889c32ec9db54c4a20cc050a338542b7",
         "name": "firrtl",
         "source": "git@github.com:freechipsproject/firrtl.git"
     },
