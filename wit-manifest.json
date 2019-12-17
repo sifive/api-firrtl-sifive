@@ -1,11 +1,11 @@
 [
     {
-        "commit": "f738fbe8667ed6b76ec00a15960b9c3a42b8654a",
+        "commit": "b68443762a1708492f84edc1901a0750c9f37cc4",
         "name": "firrtl",
         "source": "git@github.com:freechipsproject/firrtl.git"
     },
     {
-        "commit": "ac2badb819c39fc5e3dde8298d8f94a877432101",
+        "commit": "5f17bb64bc259c6fbd67adb38ca7880fa01b3aa4",
         "name": "api-scala-sifive",
         "source": "git@github.com:sifive/api-scala-sifive.git"
     }
