@@ -1,4 +1,4 @@
-global def runAPIFIRRTLSiFiveTests =
+global def runAPIFIRRTLSiFiveTests Unit =
   def jars = scalaModuleClasspath firrtlScalaModule
   def topName = 'AndGate'
   def targetDir = "{here}/build"
