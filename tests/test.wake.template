@@ -1,0 +1,11 @@
+global def runAPIFIRRTLSiFiveTests =
+  def jars = scalaModuleClasspath firrtlScalaModule
+  def topName = 'AndGate'
+  def targetDir = "{here}/build"
+  def inputFile = (source "{here}/AndGate.fir")
+
+  def compilePlan = makeFirrtlCompilePlan jars topName targetDir inputFile
+  def outputs = runFirrtlCompile compilePlan
+
+  outputs.getFirrtlCompileOutputsAllOutputs
+  | findFailFn getPathResult

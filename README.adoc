@@ -1,0 +1,9 @@
+= Wake FIRRTL API
+
+image::https://github.com/sifive/api-firrtl-sifive/workflows/Test/badge.svg[]
+
+https://github.com/sifive/wake[Wake] rules for compiling and running the
+https://github.com/freechipsproject/firrtl[FIRRTL] compiler.
+
+There is no documentation at the moment, but please see the documentation
+comments within the code itself.
