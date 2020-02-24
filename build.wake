@@ -360,3 +360,5 @@ global def firrtlBuildTarget =
     )
   ))
   | makeBuildTarget
+
+publish buildTargets = firrtlBuildTarget, Nil
