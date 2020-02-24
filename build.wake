@@ -263,6 +263,60 @@ def jFirrtlAnnotations jPath =
 
 target writeTarget path contents = write path contents
 
+data Output =
+  OutputRegex RegExp
+  OutputName String
+
+def getOutput outputs getter =
+  def filtered = match getter
+    OutputName filename =
+      filter (filename.simplify ==~ _.getPathName) outputs
+    OutputRegex regex =
+      filter (matches regex _.getPathName) outputs
+  match filtered
+    one, Nil = Pass one
+    Nil = match getter
+      OutputRegex regex = Fail "firrtl custom output: no file matching `{regExpToString regex}`".makeError
+      OutputName filename = Fail "firrtl custom output: no file matching \"{filename}\"".makeError
+    many = match getter
+      OutputRegex regex = Fail "firrtl custom output: more than one match for `{regExpToString regex}`: {many | map getPathName | catWith ", "}".makeError
+      OutputName filename = Fail "firrtl custom output: more than one match for \"{filename}\": {many | map getPathName | catWith ", "}".makeError
+
+data OutputGroup =
+  OutputGroupRegex RegExp
+  OutputGroupDirectory String
+
+def getOutputGroup outputs getter = match getter
+  OutputGroupDirectory dir =
+    def regex =
+      dir
+      | simplify
+      | quote
+      | (_, `/.*`, Nil)
+      | regExpCat
+    filter (matches regex _.getPathName) outputs
+  OutputGroupRegex regex =
+    filter (matches regex _.getPathName) outputs
+
+data a,, b = a,, b
+
+def stringToRegExpError =
+  _
+  | stringToRegExp
+  | rmapFail (Fail _.makeError)
+
+def jCustomOutputsMap = jObjectMap (jOneOf (
+  jMap (_ | OutputName | Pass) jString,
+  jMap (_ | stringToRegExpError | rmap OutputRegex) (jField "regex" jString),
+  Nil
+))
+
+def jCustomOutputGroupsMap = jObjectMap (jOneOf (
+  jMap (_ | OutputGroupDirectory | Pass) (jField "directory" jString),
+  jMap (_ | stringToRegExpError | rmap OutputGroupRegex) (jField "regex" jString),
+  Nil
+))
+
 global def firrtlBuildTarget =
   baseBuildTargetPlan "firrtl"
   | dependsOnFn "classpath" jNestedArrayMap
@@ -282,6 +336,8 @@ global def firrtlBuildTarget =
   | dependsOnOption "splitModules" jBoolean
   | dependsOnOption "javaOptions" (jNestedArrayMap jString)
   | dependsOnOptionFn "visibleFiles" jNestedArrayMap
+  | dependsOnOption "customOutputs" jCustomOutputsMap
+  | dependsOnOption "customOutputGroups" jCustomOutputGroupsMap
   | definedAs (
     \classpath
     \topname
@@ -296,17 +352,17 @@ global def firrtlBuildTarget =
     \splitModules
     \javaOpts
     \visibleFiles
+    \customOutputsMap
+    \customOutputGroupsMap
     \buildInput
 
     match buildInput.getBuildTargetInputsOutputDir
       None = Fail "no target directory specified".makeError
       Some targetDir =
         def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
-        def toTargetDirFile file = "{targetDir}/{file}".simplify
         def replSeqMem =
           rawReplSeqMem
           | getOrElse Nil
-          | map (editPairSecond toTargetDirFile)
         def annotationsPaths =
           annotations
           | getOrElse Nil
@@ -328,22 +384,48 @@ global def firrtlBuildTarget =
           | setFirrtlCompilePlanJavaOpts (javaOpts | getOrElse defaultJavaOpts)
           | setFirrtlCompilePlanVisibleFiles (visibleFiles | getOrElse Nil)
           | runFirrtlCompile
-        def findFile (Pair _ rawFilename) =
-          def filename = rawFilename.toTargetDirFile
+        def allOutputs = firrtlCompile.getFirrtlCompileOutputsAllOutputs
+        def memConfOutputs =
+          def fn (Pair name output) =
+            output
+            | OutputName
+            | getOutput allOutputs
+            | rmap (Pair name)
+          findFailFn fn replSeqMem
+        def rCustomOutputs =
+          def fn (Pair name output) =
+            output
+            | rmapPass (getOutput allOutputs)
+            | rmap (Pair name)
+          customOutputsMap
+          | getOrElse Nil
+          | findFailFn fn
+        def rCustomOutputGroups =
+          def fn (Pair name outputGroup) =
+            outputGroup
+            | rmap (
+              _
+              | getOutputGroup allOutputs
+              | map bPath
+              | bArray
+              | Pair name
+            )
+          customOutputGroupsMap
+          | getOrElse Nil
+          | findFailFn fn
+        def rFirrtlCompile =
           firrtlCompile
           | getFirrtlCompileOutputsAllOutputs
-          | find (_.getPathName ==* filename)
-          | omap (rawFilename → _.getPairFirst)
-        def memConfOutputs =
-          rawReplSeqMem
-          | getOrElse Nil
-          | mapPartial findFile
-        firrtlCompile
-        | getFirrtlCompileOutputsAllOutputs
-        | findFailFn getPathResult
-        | rmap (\_ firrtlCompile → memConfOutputs)
+          | findFailFn getPathResult
+          | rmap (\_ firrtlCompile)
+        rmapBegin
+        | rmapAdd rFirrtlCompile
+        | rmapAdd memConfOutputs
+        | rmapAdd rCustomOutputs
+        | rmapAdd rCustomOutputGroups
+        | rmapEnd (_,, _,, _,, _)
   )
-  | exports (\(Pair firrtlCompile memConfOutputs) (
+  | exports (\(firrtlCompile,, memConfOutputs,, customOutputs,, customOutputGroups) (
     def allOutputs = firrtlCompile.getFirrtlCompileOutputsAllOutputs
     def targetDirOutputs = firrtlCompile.getFirrtlCompileOutputsTargetOutputs
     def verilogOutputs = filter (matches `.*\.v` _.getPathName) allOutputs
@@ -356,6 +438,8 @@ global def firrtlBuildTarget =
       "memConf" → bObject (
         map (\(Pair name path) name → bPath path) memConfOutputs
       ),
+      "customOutputs" → bObject (map (editPairSecond bPath) customOutputs),
+      "customOutputGroups" → bObject customOutputGroups,
       Nil
     )
   ))
