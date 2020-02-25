@@ -244,25 +244,6 @@ global def runFirrtlCompile plan =
     firrtlOutputs | filter (matches regex _.getPathName)
   FirrtlCompileOutputs targetOutputs firrtlOutputs plan
 
-
-data Annotations =
-  AnnotationsPath Path
-  AnnotationsJValue (filename: String) JValue
-
-def jFirrtlAnnotations jPath =
-  def base = jOneOf (
-    jMap AnnotationsPath jPath,
-    jMap2 AnnotationsJValue (jField "filename" jString) (jField "jvalue" jAny),
-    Nil
-  )
-  jOneOf (
-    jNestedArrayMap base,
-    jMap (_, Nil) base,
-    Nil
-  )
-
-target writeTarget path contents = write path contents
-
 data Output =
   OutputRegex RegExp
   OutputName String
@@ -294,7 +275,6 @@ def getOutputGroup outputs getter = match getter
       | quote
       | (_, `/`, subRegex, Nil)
       | regExpCat
-    def _ = println regex.format
     filter (matches regex _.getPathName) outputs
   OutputGroupRegex regex =
     filter (matches regex _.getPathName) outputs
@@ -334,7 +314,7 @@ global def firrtlBuildTarget =
   | dependsOnFn "inputFile" (_)
   | dependsOn "targetDir" jString
   | dependsOnOption "logLevel" jFirrtlLogLevel
-  | dependsOnOptionFn "annotations" jFirrtlAnnotations
+  | dependsOnOptionFn "annotations" jNestedArrayMap
   | dependsOnOption "compiler" jFirrtlCompiler
   | dependsOnOption "infoMode" jFirrtlInfoMode
   | dependsOnOption "customTransforms" (jNestedArrayMap jString)
@@ -374,11 +354,6 @@ global def firrtlBuildTarget =
       def annotationsPaths =
         annotations
         | getOrElse Nil
-        | map (match _
-          AnnotationsPath p = p
-          AnnotationsJValue filename jvalue =
-            writeTarget "{targetDir}/{filename}".simplify jvalue.prettyJSON
-        )
       def firrtlCompile =
         makeFirrtlCompilePlan classpath topname targetDir inputFile
         | setFirrtlCompilePlanLogLevel (getOrElse FirrtlLogInfo logLevel)
