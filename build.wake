@@ -109,6 +109,7 @@ tuple FirrtlCompilePlan =
   global SplitModules:     Boolean
   global VisibleFiles:     List Path
   global JavaOpts:         List String
+  global Resources:        List String
 
 def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
 
@@ -137,6 +138,7 @@ global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   True                  # SplitModules
   Nil                   # VisibleFiles
   defaultJavaOpts       # JavaOpts
+  Nil                   # Resources
 
 def logLevelToString ll = match ll
   FirrtlLogError = "error"
@@ -237,6 +239,7 @@ global def runFirrtlCompile plan =
   def firrtlOutputs =
     makePlan cmdline inputs
     | editPlanFnOutputs (_ _ | filterOutputs)
+    | setPlanResources plan.getFirrtlCompilePlanResources
     | runJob
     | getJobOutputs
   def targetOutputs =
@@ -329,6 +332,7 @@ global def firrtlBuildTarget =
   | dependsOnOptionFn "visibleFiles" jNestedArrayMap
   | dependsOnOption "customOutputs" jCustomOutputsMap
   | dependsOnOption "customOutputGroups" jCustomOutputGroupsMap
+  | dependsOnOption "resources" (jNestedArrayMap jString)
   | definedAs (
     \classpath
     \topname
@@ -346,6 +350,7 @@ global def firrtlBuildTarget =
     \visibleFiles
     \customOutputsMap
     \customOutputGroupsMap
+    \resources
     \buildInput (
       def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
       def replSeqMem =
@@ -366,6 +371,7 @@ global def firrtlBuildTarget =
         | setFirrtlCompilePlanSplitModules (getOrElse False splitModules)
         | setFirrtlCompilePlanJavaOpts (javaOpts | getOrElse defaultJavaOpts)
         | setFirrtlCompilePlanVisibleFiles (visibleFiles | getOrElse Nil)
+        | setFirrtlCompilePlanResources (resources | getOrElse Nil)
         | runFirrtlCompile
       def allOutputs = firrtlCompile.getFirrtlCompileOutputsAllOutputs
       def memConfOutputs =
