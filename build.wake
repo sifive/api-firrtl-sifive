@@ -13,9 +13,9 @@ def firrtlAntlr Unit =
     | omapPartial expandJavaIvyDep
     | getOrFail (makeError "antlr dep not found!")
   def ivyDep = ivyDepJSON | rmapPass extractIvyDep
-  def package = "firrtl.antlr"
+  def _package = "firrtl.antlr"
   def main = "org.antlr.v4.Tool"
-  def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", package, (map getPathName srcs)
+  def args = "-o", outDir.getPathName, "-visitor", "-no-listener", "-package", _package, (map getPathName srcs)
   match ivyDep
     Pass dep = runIvyDep dep main args (outDir, srcs) | getJobOutputs
     Fail err = makeBadPath err, Nil
@@ -136,6 +136,9 @@ tuple FirrtlCompileOutputs =
   TargetOutputs_: List Path
   AllOutputs_:    List Path
   InputPlan_:     FirrtlCompilePlan
+  # Only exists for this to be simultaaneously compatible with Wake 0.17 and
+  # 0.18 by forcing this tuple to be globally visible.
+  global Wake0_18_Shim_: Unit
 
 # Get paths for output files in target directory.
 #
@@ -214,4 +217,4 @@ global def runFirrtlCompile plan =
   def targetOutputs =
     def regex = regExpCat (targetDir.quote, `/.*`, Nil)
     firrtlOutputs | filter (matches regex _.getPathName)
-  FirrtlCompileOutputs targetOutputs firrtlOutputs plan
+  FirrtlCompileOutputs targetOutputs firrtlOutputs plan Unit
