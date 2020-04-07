@@ -1,8 +1,8 @@
 [
     {
-        "commit": "b68443762a1708492f84edc1901a0750c9f37cc4",
+        "commit": "026c18dd76d4e2121c7f6c582d15e4d5a3ab842b",
         "name": "firrtl",
-        "source": "git@github.com:freechipsproject/firrtl.git"
+        "source": "git@github.com:albertchen-sifive/firrtl.git"
     },
     {
         "commit": "5f17bb64bc259c6fbd67adb38ca7880fa01b3aa4",
