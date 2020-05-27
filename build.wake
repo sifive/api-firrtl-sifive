@@ -191,7 +191,7 @@ global def runFirrtlCompile plan =
       else "-fct", "{catWith "," customTransforms}", base
 
     def classpath = jars | map getPathName | catWith ":"
-    which "java", javaOpts ++ ("-cp", classpath, main,
+    "java", javaOpts ++ ("-cp", classpath, main,
     "-tn",            topName,
     "-i",             inputFile.getPathName,
     "-td",            targetDir,
@@ -211,6 +211,7 @@ global def runFirrtlCompile plan =
     filter (!matches `.*\.f` _) all
   def firrtlOutputs =
     makePlan cmdline inputs
+    | setPlanResources ("openjdk/java/1.8.0", Nil)
     | editPlanFnOutputs (_ _ | filterOutputs)
     | runJob
     | getJobOutputs
