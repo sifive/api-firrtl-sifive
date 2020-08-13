@@ -5,7 +5,7 @@
         "source": "git@github.com:freechipsproject/firrtl.git"
     },
     {
-        "commit": "c51c7980f86afa2d1841c524644fefbe564cd982",
+        "commit": "e5d463cd9d131033396a9d8921440abb55f114cd",
         "name": "api-scala-sifive",
         "source": "git@github.com:sifive/api-scala-sifive.git"
     }
