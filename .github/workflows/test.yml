@@ -1,35 +1,24 @@
 name: Test
 
-on: [push, pull_request]
+on:
+   push:
+     branches:
+     - master
+   pull_request:
+     branches:
+     - master
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      # $WIT_WORKSPACE path is relative to $GITHUB_WORKSPACE
-      WIT_WORKSPACE: wit-workspace
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Wit Init
+      uses: sifive/wit/actions/init@v0.13.2
       with:
-        path: wit-packages/api-firrtl-sifive
-
-    - name: 'Wit Init'
-      uses: sifive/wit/actions/wit@v0.12.0
-      with:
-        command: init
-        arguments: |
-          ${{ env.WIT_WORKSPACE }}
-          -a ./wit-packages/api-firrtl-sifive
-          -a git@github.com:sifive/environment-blockci-sifive.git::0.3.0
-        force_github_https: true
+        additional_packages: git@github.com:sifive/environment-blockci-sifive.git::0.7.1
 
     - name: Run tests
-      run: |
-        set -euo pipefail
-        docker run \
-          --volume="$GITHUB_WORKSPACE/$WIT_WORKSPACE:/mnt/workspace" \
-          --workdir="/mnt/workspace" \
-          --rm \
-          sifive/environment-blockci:0.3.0 \
-          api-firrtl-sifive/tests/run-tests.sh
+      uses: sifive/environment-blockci-sifive/actions/shell@0.7.1
+      with:
+        command: api-firrtl-sifive/tests/run-tests.sh

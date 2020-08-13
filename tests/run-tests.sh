@@ -13,4 +13,4 @@ wake --init .
 # such as testing.
 ln -snf "test.wake.template" "$api_firrtl_sifive_path/tests/test.wake"
 
-wake runAPIFIRRTLSiFiveTests Unit
+wake -vx 'runAPIFIRRTLSiFiveTests Unit'
