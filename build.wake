@@ -3,9 +3,11 @@ def buildDir = mkdir "build/firrtl"
 
 def ivyDepJSON = readIvyDepsJSON here
 
+def firrtlRoot = findGitRepositoryWithFallback "firrtl"
+
 def firrtlAntlr Unit =
   def outDir = mkdir "{buildDir.getPathName}/antlr"
-  def antlrSrcDir = "firrtl/src/main/antlr4"
+  def antlrSrcDir = "{firrtlRoot}/src/main/antlr4"
   def srcs = sources antlrSrcDir `.*\.g4`
   def extractIvyDep json =
     json // `antlr` // `dependencies` | getJString
@@ -22,7 +24,7 @@ def firrtlAntlr Unit =
 
 def firrtlProto Unit =
   def outDir = mkdir "{buildDir.getPathName}/proto"
-  def protoSrcDir = "firrtl/src/main/proto"
+  def protoSrcDir = "{firrtlRoot}/src/main/proto"
   def protoSrcs = sources protoSrcDir `.*\.proto`
   def args = "--java_out={outDir.getPathName}", (map getPathName protoSrcs)
   makePlan ("protoc", args) (outDir, protoSrcs)
@@ -39,7 +41,7 @@ def firrtlProto Unit =
 # firrtlScalaModule: ScalaModule
 global def firrtlScalaModule =
   makeScalaModuleFromJSON here "firrtl"
-  | setScalaModuleRootDir "firrtl"
+  | setScalaModuleRootDir firrtlRoot
   | setScalaModuleFnGeneratedSources (\_ firrtlProto Unit ++ firrtlAntlr Unit)
 
 
