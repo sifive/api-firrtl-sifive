@@ -92,7 +92,7 @@ tuple FirrtlCompilePlan =
   global SplitModules:     Boolean
   global VisibleFiles:     List Path
   global JavaOpts:         List String
-  global Main:             String
+  global MainClass:        String
   global ExtraArgs:        List String
   # Set this to True if using a Firrtl Stage for Main, ignores removed options TopName and SplitModules
   global UseStage:         Boolean
@@ -124,7 +124,7 @@ global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   True                  # SplitModules
   Nil                   # VisibleFiles
   defaultJavaOpts       # JavaOpts
-  "firrtl.Driver"       # Main
+  "firrtl.Driver"       # MainClass
   Nil                   # ExtraArgs
   False                 # UseStage
 
@@ -193,7 +193,7 @@ global def runFirrtlCompile plan =
   def splitModules     = plan.getFirrtlCompilePlanSplitModules
   def visibleFiles     = plan.getFirrtlCompilePlanVisibleFiles
   def javaOpts         = plan.getFirrtlCompilePlanJavaOpts
-  def main             = plan.getFirrtlCompilePlanMain
+  def main             = plan.getFirrtlCompilePlanMainClass
   def extraArgs        = plan.getFirrtlCompilePlanExtraArgs
   def useStage         = plan.getFirrtlCompilePlanUseStage
 
