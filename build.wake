@@ -94,7 +94,9 @@ tuple FirrtlCompilePlan =
   global JavaOpts:         List String
   global MainClass:        String
   global ExtraArgs:        List String
-  # Set this to True if using a Firrtl Stage for Main, ignores removed options TopName and SplitModules
+  # Set this to True if using a Firrtl Stage for Main. If True, TopName is
+  # ignored and SplitModules + Compiler are interpreted as
+  # "emit-modules"/"emit-circuit" instead of "split-module"/"compiler"
   global UseStage:         Boolean
 
 def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
@@ -204,11 +206,18 @@ global def runFirrtlCompile plan =
         "--repl-seq-mem", "-c:{circuit}:-o:{confFile}", cmdline
       foldr toCmdline base replSeqMem
     def withInferRW base = if inferRW then "--infer-rw", base else base
-    def withSplitModules base = if splitModules && !useStage then "--split-modules", base else base
     def withCustomTransforms base =
       if customTransforms.empty then base
       else "-fct", "{catWith "," customTransforms}", base
     def withTopName base = if !useStage then "-tn", topName, base else base
+
+    def withEmitter base =
+      def compilerName = compiler.compilerToString
+      match splitModules useStage
+        True True = "--emit-modules", compilerName, base
+        False True = "--emit-circuit", compilerName, base
+        True False = "--split-modules", "--compiler", compilerName, base
+        False False = "--compiler", compilerName, base
 
     def classpath = jars | map getPathName | catWith ":"
     "java", javaOpts ++ ("-cp", classpath, main,
@@ -216,14 +225,13 @@ global def runFirrtlCompile plan =
     "-td",            targetDir,
     "-ll",            logLevel.logLevelToString,
     "--info-mode",    infoMode.infoModeToString,
-    "--compiler",     compiler.compilerToString,
     Nil
     | withAnnoFiles
     | withCustomTransforms
-    | withSplitModules
     | withReplSeqMems
     | withInferRW
-    | withTopName)
+    | withTopName
+    | withEmitter)
     ++ extraArgs
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
