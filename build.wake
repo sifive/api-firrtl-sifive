@@ -92,6 +92,12 @@ tuple FirrtlCompilePlan =
   global SplitModules:     Boolean
   global VisibleFiles:     List Path
   global JavaOpts:         List String
+  global MainClass:        String
+  global ExtraArgs:        List String
+  # Set this to True if using a Firrtl Stage for Main. If True, TopName is
+  # ignored and SplitModules + Compiler are interpreted as
+  # "emit-modules"/"emit-circuit" instead of "split-module"/"compiler"
+  global UseStage:         Boolean
 
 def defaultJavaOpts = "-Xmx4G", "-Xss5M", Nil
 
@@ -120,6 +126,9 @@ global def makeFirrtlCompilePlan jars topName targetDir inputFile =
   True                  # SplitModules
   Nil                   # VisibleFiles
   defaultJavaOpts       # JavaOpts
+  "firrtl.Driver"       # MainClass
+  Nil                   # ExtraArgs
+  False                 # UseStage
 
 def logLevelToString ll = match ll
   FirrtlLogError = "error"
@@ -186,8 +195,9 @@ global def runFirrtlCompile plan =
   def splitModules     = plan.getFirrtlCompilePlanSplitModules
   def visibleFiles     = plan.getFirrtlCompilePlanVisibleFiles
   def javaOpts         = plan.getFirrtlCompilePlanJavaOpts
-
-  def main     = "firrtl.Driver"
+  def main             = plan.getFirrtlCompilePlanMainClass
+  def extraArgs        = plan.getFirrtlCompilePlanExtraArgs
+  def useStage         = plan.getFirrtlCompilePlanUseStage
 
   def cmdline =
     def withAnnoFiles base = foldr ("-faf", _.getPathName, _) base annoFiles
@@ -196,25 +206,33 @@ global def runFirrtlCompile plan =
         "--repl-seq-mem", "-c:{circuit}:-o:{confFile}", cmdline
       foldr toCmdline base replSeqMem
     def withInferRW base = if inferRW then "--infer-rw", base else base
-    def withSplitModules base = if splitModules then "--split-modules", base else base
     def withCustomTransforms base =
       if customTransforms.empty then base
       else "-fct", "{catWith "," customTransforms}", base
+    def withTopName base = if !useStage then "-tn", topName, base else base
+
+    def withEmitter base =
+      def compilerName = compiler.compilerToString
+      match splitModules useStage
+        True True = "--emit-modules", compilerName, base
+        False True = "--emit-circuit", compilerName, base
+        True False = "--split-modules", "--compiler", compilerName, base
+        False False = "--compiler", compilerName, base
 
     def classpath = jars | map getPathName | catWith ":"
     "java", javaOpts ++ ("-cp", classpath, main,
-    "-tn",            topName,
     "-i",             inputFile.getPathName,
     "-td",            targetDir,
     "-ll",            logLevel.logLevelToString,
     "--info-mode",    infoMode.infoModeToString,
-    "--compiler",     compiler.compilerToString,
     Nil
     | withAnnoFiles
     | withCustomTransforms
-    | withSplitModules
     | withReplSeqMems
-    | withInferRW)
+    | withInferRW
+    | withTopName
+    | withEmitter)
+    ++ extraArgs
 
   def inputs = targetDir.mkdir, inputFile, annoFiles ++ jars ++ visibleFiles
   def filterOutputs all =
